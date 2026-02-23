@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CoPet - desktop pet для Codex в VS Code</title>
+  <meta name="description" content="CoPet is a Windows desktop pet that visualizes Codex state: idle, thinking, tool, done, error.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <header class="hero section">
+    <p class="eyebrow">CoPet</p>
+    <h1>CoPet - desktop pet для Codex в VS Code</h1>
+    <p class="subtitle">Shows live agent status: idle, thinking, tool, done, error.</p>
+    <div class="hero-actions">
+      <a id="download-link" class="btn btn-primary" href="https://github.com/roklend/copet-site/releases/latest">Download for Windows</a>
+      <a class="btn btn-ghost" href="#simulator">Open UI Simulator</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="section card">
+      <h2>Download</h2>
+      <p>Get the latest Windows build from GitHub Releases.</p>
+      <a class="btn btn-primary" href="https://github.com/roklend/copet-site/releases/latest">Download for Windows</a>
+    </section>
+
+    <section class="section card">
+      <h2>Quickstart</h2>
+      <ol>
+        <li>Download and unpack the latest <code>CoPet-vX.Y.Z-win-x64.zip</code>.</li>
+        <li>Run <code>CoPet.exe</code>.</li>
+        <li>If onboarding opens, click <code>Apply patch</code> (optional: <code>Backup</code> first).</li>
+        <li>Open VS Code and use Codex normally.</li>
+        <li>Expected result: CoPet reacts to <code>thinking</code>, <code>tool</code>, <code>done</code>, <code>error</code>.</li>
+      </ol>
+    </section>
+
+    <section class="section card">
+      <h2>How it works</h2>
+      <ul>
+        <li>CoPet runs a local OTLP HTTP listener on <code>127.0.0.1:9009</code>.</li>
+        <li>It parses Codex telemetry events (<code>/v1/logs</code>, <code>/v1/traces</code>).</li>
+        <li>An internal state machine maps events to pet states.</li>
+        <li>The UI renderer animates satellite frames and telemetry HUD in real time.</li>
+        <li>Error and done windows are held briefly before returning to idle.</li>
+      </ul>
+    </section>
+
+    <section id="simulator" class="section card">
+      <h2>UI Simulator</h2>
+      <p class="sim-copy">Static web simulation of the CoPet satellite UI and state transitions.</p>
+      <div id="sim" class="sim state-idle" data-speed="1">
+        <div class="sim-window">
+          <div class="sim-titlebar">
+            <span>CoPet Simulator</span>
+            <div class="title-actions" aria-hidden="true">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+
+          <div class="sim-frame">
+            <div class="space-layer" aria-hidden="true"></div>
+            <div class="solar solar-left" aria-hidden="true"></div>
+            <div class="solar solar-right" aria-hidden="true"></div>
+            <div class="antenna" aria-hidden="true"></div>
+            <div class="pet" aria-hidden="true"></div>
+            <div class="error-overlay" aria-hidden="true"></div>
+
+            <div class="telemetry">
+              <p><span>status</span><strong data-field="status">IDLE</strong></p>
+              <p><span>event</span><strong data-field="event">init</strong></p>
+              <p><span>tool</span><strong data-field="tool">-</strong></p>
+              <p><span>tokens</span><strong data-field="tokens">0</strong></p>
+              <p><span>elapsed</span><strong data-field="elapsed">00:00</strong></p>
+              <p><span>port</span><strong data-field="port">9009</strong></p>
+              <p><span>think</span><strong data-field="think">0</strong></p>
+              <p><span>tool#</span><strong data-field="toolCount">0</strong></p>
+              <p><span>err#</span><strong data-field="errorCount">0</strong></p>
+            </div>
+          </div>
+
+          <div class="sim-controls">
+            <button id="playPauseBtn" class="btn btn-control" type="button">Pause</button>
+            <button id="restartBtn" class="btn btn-control" type="button">Restart</button>
+            <div class="speed-group" role="group" aria-label="Speed">
+              <button class="btn btn-speed is-active" data-speed="1" type="button">x1</button>
+              <button class="btn btn-speed" data-speed="2" type="button">x2</button>
+              <button class="btn btn-speed" data-speed="4" type="button">x4</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Troubleshooting</h2>
+      <p>For setup and diagnostics, see <a href="https://github.com/roklend/copet-site/blob/main/docs/TROUBLESHOOTING.md" target="_blank" rel="noopener noreferrer">docs/TROUBLESHOOTING.md</a>.</p>
+    </section>
+  </main>
+
+  <footer class="section footer">
+    <p>CoPet is a local desktop companion for Codex workflows.</p>
+  </footer>
+
+  <script src="sim.js"></script>
+</body>
+</html>
