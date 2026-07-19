@@ -2,7 +2,7 @@
   const FPS = 6;
   const FRAME_COUNT = 192;
   const FRAME_PREFIX = "render/output/x2/frame_";
-  const FRAME_SUFFIX = ".png";
+  const FRAME_SUFFIX = ".png?v=0.3.0";
 
   const player = document.getElementById("frame-player");
   if (!player) {

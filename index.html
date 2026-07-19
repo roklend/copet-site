@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CoPet</title>
-  <meta name="description" content="CoPet render preview">
-  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="CoPet v0.3.0 — a tiny desktop satellite for Codex sessions">
+  <link rel="stylesheet" href="style.css?v=0.3.0">
 </head>
 <body>
   <main class="stage">
@@ -24,11 +24,11 @@
       <p class="hero-tagline">A tiny desktop satellite for your Codex sessions.</p>
 
       <div class="hero-actions">
-        <a class="cta cta-primary" href="https://github.com/roklend/CoPet/releases/download/v0.2.1/CoPet-v0.2.1-win-x64.zip" aria-label="Download CoPet">
+        <a class="cta cta-primary" href="https://github.com/roklend/copet-site/releases/download/v0.3.0/CoPet-v0.3.0-win-x64.zip" aria-label="Download CoPet v0.3.0 for Windows">
           <span>Download</span>
-          <span class="cta-note">(Windows)</span>
+          <span class="cta-note">(v0.3.0 &middot; Windows)</span>
         </a>
-        <a class="cta cta-secondary" href="https://github.com/roklend/CoPet" aria-label="View CoPet on GitHub">
+        <a class="cta cta-secondary" href="https://github.com/roklend/copet-site" aria-label="View the public CoPet site repository on GitHub">
           <svg class="cta-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path
               fill="currentColor"
@@ -47,6 +47,8 @@
 
       <ul class="feature-list" aria-label="CoPet features">
         <li>reacts to thinking, tools, done, error</li>
+        <li>shows a SUB indicator while sub-agents are active</li>
+        <li>trust all four CoPet hooks manually via <code>/hooks</code></li>
         <li>lives on your desktop</li>
         <li>local-first</li>
         <li>made for Codex in VS Code</li>
@@ -65,7 +67,7 @@
       <img
         id="frame-player"
         class="player-frame"
-        src="render/output/x2/frame_0001.png"
+        src="render/output/x2/frame_0001.png?v=0.3.0"
         alt="CoPet render preview"
         width="512"
         height="568"
@@ -73,6 +75,6 @@
     </section>
   </main>
 
-  <script src="copet.js"></script>
+  <script src="copet.js?v=0.3.0"></script>
 </body>
 </html>
