@@ -1,0 +1,15 @@
+C:\CoPet\site\render\CoPetRender\bin\Release\net8.0-windows\CoPetRender.exe
+C:\CoPet\site\render\CoPetRender\bin\Release\net8.0-windows\CoPetRender.deps.json
+C:\CoPet\site\render\CoPetRender\bin\Release\net8.0-windows\CoPetRender.runtimeconfig.json
+C:\CoPet\site\render\CoPetRender\bin\Release\net8.0-windows\CoPetRender.dll
+C:\CoPet\site\render\CoPetRender\bin\Release\net8.0-windows\CoPetRender.pdb
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.GeneratedMSBuildEditorConfig.editorconfig
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.AssemblyInfoInputs.cache
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.AssemblyInfo.cs
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.csproj.CoreCompileInputs.cache
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.sourcelink.json
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.dll
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\refint\CoPetRender.dll
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.pdb
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\CoPetRender.genruntimeconfig.cache
+C:\CoPet\site\render\CoPetRender\obj\Release\net8.0-windows\ref\CoPetRender.dll

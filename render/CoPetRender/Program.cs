@@ -10,6 +10,10 @@ const int CloseButtonSize = 18;
 const int TitleBarButtonGap = 4;
 const float TitleFontScale = 0.8f;
 const int HudPadding = 6;
+const int SubagentLampCount = 4;
+const int SubagentLampSize = 8;
+const int SubagentLampGap = 3;
+const int SubagentIgnitionFrameCount = 2;
 const int UiFps = 6;
 const int FrameWidth = 256;
 const int FrameHeight = 284;
@@ -19,14 +23,13 @@ const int X2Scale = 2;
 var repoRoot = FindRepoRoot(Directory.GetCurrentDirectory());
 var assetRoot = Path.Combine(repoRoot, "assets", "sat");
 var fontPath = Path.Combine(repoRoot, "assets", "font", "LCDSolid1.13-Regular.otf");
-var outputRoot = Path.Combine(repoRoot, "site", "render", "output");
+var outputRoot = ResolveOutputRoot(repoRoot, args);
 var baseRoot = Path.Combine(outputRoot, "base");
 var x2Root = Path.Combine(outputRoot, "x2");
 
+PrepareOutputRoot(outputRoot);
 Directory.CreateDirectory(baseRoot);
 Directory.CreateDirectory(x2Root);
-DeleteExistingFrames(baseRoot);
-DeleteExistingFrames(x2Root);
 
 using var background = LoadBitmap(Path.Combine(assetRoot, "background.png"));
 using var errorOverlay = LoadBitmap(Path.Combine(assetRoot, "error.png"));
@@ -46,6 +49,7 @@ var frameCatalog = new Dictionary<string, Bitmap[]>
     ["tool_idle"] = LoadFrameSet("tool_idle", "tool_idle"),
 };
 
+var subagentIndicatorState = new SubagentIndicatorState(SubagentLampCount, SubagentIgnitionFrameCount);
 var timeline = BuildTimeline();
 var totalFrames = timeline.Count;
 var manifestFrames = new List<string>(totalFrames);
@@ -89,6 +93,7 @@ for (var frameNumber = 1; frameNumber <= totalFrames; frameNumber++)
 var manifest = new Manifest(UiFps, totalFrames, FrameWidth * X2Scale, FrameHeight * X2Scale, manifestFrames);
 var manifestPath = Path.Combine(outputRoot, "manifest.json");
 File.WriteAllText(manifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
+Console.WriteLine($"Rendered {totalFrames} frames to {outputRoot}");
 
 foreach (var set in frameCatalog.Values)
 {
@@ -117,12 +122,75 @@ string FindRepoRoot(string startDirectory)
     throw new DirectoryNotFoundException("Could not locate repo root containing assets\\sat.");
 }
 
-void DeleteExistingFrames(string directory)
+string ResolveOutputRoot(string repositoryRoot, string[] arguments)
 {
-    foreach (var file in Directory.EnumerateFiles(directory, "frame_*.png"))
+    string? configuredOutput = null;
+    for (var index = 0; index < arguments.Length; index++)
     {
-        File.Delete(file);
+        var argument = arguments[index];
+        if (argument.Equals("--output", StringComparison.OrdinalIgnoreCase))
+        {
+            if (configuredOutput is not null || index + 1 >= arguments.Length)
+            {
+                throw new ArgumentException("Use --output exactly once and provide a directory path.");
+            }
+
+            configuredOutput = arguments[++index];
+            continue;
+        }
+
+        const string outputPrefix = "--output=";
+        if (argument.StartsWith(outputPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            if (configuredOutput is not null)
+            {
+                throw new ArgumentException("Use --output exactly once.");
+            }
+
+            configuredOutput = argument[outputPrefix.Length..];
+            continue;
+        }
+
+        throw new ArgumentException($"Unknown argument: {argument}");
     }
+
+    if (string.IsNullOrWhiteSpace(configuredOutput))
+    {
+        configuredOutput = Path.Combine(repositoryRoot, "site", "render", "output");
+    }
+    else if (!Path.IsPathFullyQualified(configuredOutput))
+    {
+        configuredOutput = Path.Combine(repositoryRoot, configuredOutput);
+    }
+
+    return Path.GetFullPath(configuredOutput);
+}
+
+void PrepareOutputRoot(string directory)
+{
+    if (File.Exists(directory))
+    {
+        throw new IOException($"Render output path is a file: {directory}");
+    }
+
+    if (Directory.Exists(directory))
+    {
+        var info = new DirectoryInfo(directory);
+        if (info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            throw new IOException($"Render output must not be a reparse point: {directory}");
+        }
+
+        if (Directory.EnumerateFileSystemEntries(directory).Any())
+        {
+            throw new IOException(
+                $"Render output must be a new or empty directory; existing contents were preserved: {directory}");
+        }
+
+        return;
+    }
+
+    Directory.CreateDirectory(directory);
 }
 
 Bitmap LoadBitmap(string path)
@@ -155,7 +223,7 @@ List<FramePlan> BuildTimeline()
     const int doneHoldFrames = 24;
     const int doneCloseFrames = 8;
 
-    var finalTelemetry = new TelemetrySnapshot(4, 2, 0, "00:16");
+    var finalTelemetry = new TelemetrySnapshot(4, 2, 0, "00:16", 0);
 
     AppendFrames(plans, "idle", "IDLE", latchedIdleFrames, _ => CreateHud("IDLE", finalTelemetry));
 
@@ -211,7 +279,7 @@ List<FramePlan> BuildTimeline()
         return hud;
     });
 
-    var doneFrozenTelemetry = new TelemetrySnapshot(4, 2, 0, FormatElapsedSeconds(activeFrame / UiFps));
+    var doneFrozenTelemetry = new TelemetrySnapshot(4, 2, 0, FormatElapsedSeconds(activeFrame / UiFps), 0);
     AppendFrames(plans, "tool", "DONE", doneHoldFrames, _ => CreateHud("DONE", doneFrozenTelemetry));
     AppendFrames(plans, "tool_idle", "DONE", doneCloseFrames, _ => CreateHud("DONE", doneFrozenTelemetry));
     AppendFrames(plans, "idle", "IDLE", latchedIdleFrames, _ => CreateHud("IDLE", doneFrozenTelemetry));
@@ -229,11 +297,13 @@ void AppendFrames(List<FramePlan> plans, string sequenceKey, string rawState, in
 
 HudState CreateThinkingHud(string rawState, int thinkingLikeFrame, int activeFrame)
 {
+    var activeSubagents = thinkingLikeFrame < 12 ? 2 : 3;
     var telemetry = new TelemetrySnapshot(
         RampCount(thinkingLikeFrame, 56, 4),
         0,
         0,
-        FormatElapsedSeconds((activeFrame + 1) / UiFps));
+        FormatElapsedSeconds((activeFrame + 1) / UiFps),
+        activeSubagents);
 
     return CreateHud(rawState, telemetry);
 }
@@ -244,14 +314,23 @@ HudState CreateToolHud(string rawState, int toolFrame, int activeFrame)
         4,
         RampCount(toolFrame, 40, 2),
         0,
-        FormatElapsedSeconds((activeFrame + 1) / UiFps));
+        FormatElapsedSeconds((activeFrame + 1) / UiFps),
+        3);
 
     return CreateHud(rawState, telemetry);
 }
 
 HudState CreateHud(string rawState, TelemetrySnapshot telemetry)
 {
-    return new HudState(rawState, telemetry.ThinkCount, telemetry.ToolCount, telemetry.ErrorCount, telemetry.TimeText, false);
+    return new HudState(
+        rawState,
+        telemetry.ThinkCount,
+        telemetry.ToolCount,
+        telemetry.ErrorCount,
+        telemetry.TimeText,
+        telemetry.ActiveSubagents,
+        subagentIndicatorState.NextFrame(telemetry.ActiveSubagents),
+        false);
 }
 
 int RampCount(int localFrame, int totalFrames, int maxCount)
@@ -328,6 +407,14 @@ void DrawHud(Graphics graphics, Font font, HudState hud, Rectangle satelliteRect
     var topLeft = new PointF(satelliteRect.Left + HudPadding, satelliteRect.Top + HudPadding);
     graphics.DrawString(hud.RawState, font, shadowBrush, topLeft.X + 1, topLeft.Y + 1);
     graphics.DrawString(hud.RawState, font, hudBrush, topLeft);
+    DrawSubagentIndicator(
+        graphics,
+        font,
+        hud,
+        topLeft.X,
+        topLeft.Y + font.Height + 2,
+        hudBrush,
+        shadowBrush);
 
     var lines = new[]
     {
@@ -353,6 +440,80 @@ void DrawHud(Graphics graphics, Font font, HudState hud, Rectangle satelliteRect
     graphics.DrawString(timeLine, font, hudBrush, bottomLeft);
 }
 
+void DrawSubagentIndicator(
+    Graphics graphics,
+    Font font,
+    HudState hud,
+    float x,
+    float y,
+    Brush textBrush,
+    Brush shadowBrush)
+{
+    const string label = "SUB";
+    graphics.DrawString(label, font, shadowBrush, x + 1, y + 1);
+    graphics.DrawString(label, font, textBrush, x, y);
+
+    var labelWidth = (int)Math.Ceiling(graphics.MeasureString(label, font).Width);
+    var lampX = (int)Math.Ceiling(x) + labelWidth + 4;
+    var lampY = (int)Math.Ceiling(y + ((font.Height - SubagentLampSize) / 2f));
+
+    using var offOutline = new SolidBrush(Color.FromArgb(245, 255, 255, 255));
+    using var offInterior = new SolidBrush(Color.FromArgb(235, 174, 187, 190));
+    using var onOutline = new SolidBrush(Color.FromArgb(255, 0, 102, 112));
+    using var onInterior = new SolidBrush(Color.FromArgb(255, 0, 205, 214));
+    using var warmupOutline = new SolidBrush(Color.FromArgb(255, 0, 132, 143));
+    using var warmupInterior = new SolidBrush(Color.FromArgb(255, 0, 98, 108));
+    using var ignitionOutline = new SolidBrush(Color.FromArgb(255, 201, 255, 255));
+    using var ignitionInterior = new SolidBrush(Color.FromArgb(255, 23, 244, 244));
+    using var center = new SolidBrush(Color.FromArgb(255, 239, 255, 255));
+
+    var visibleActive = Math.Min(hud.ActiveSubagents, SubagentLampCount);
+    for (var index = 0; index < SubagentLampCount; index++)
+    {
+        var rect = new Rectangle(
+            lampX + (index * (SubagentLampSize + SubagentLampGap)),
+            lampY,
+            SubagentLampSize,
+            SubagentLampSize);
+
+        if (index >= visibleActive)
+        {
+            graphics.FillRectangle(offOutline, rect);
+            graphics.FillRectangle(offInterior, rect.X + 2, rect.Y + 2, rect.Width - 4, rect.Height - 4);
+            continue;
+        }
+
+        var ignitionFrame = hud.SubagentIgnitionFrames[index];
+        var outline = ignitionFrame switch
+        {
+            2 => warmupOutline,
+            1 => ignitionOutline,
+            _ => onOutline
+        };
+        var interior = ignitionFrame switch
+        {
+            2 => warmupInterior,
+            1 => ignitionInterior,
+            _ => onInterior
+        };
+        graphics.FillRectangle(outline, rect);
+        graphics.FillRectangle(
+            interior,
+            rect.X + 2,
+            rect.Y + 2,
+            rect.Width - 4,
+            rect.Height - 4);
+        graphics.FillRectangle(center, rect.X + 3, rect.Y + 3, 2, 2);
+    }
+
+    var numberX = lampX + (SubagentLampCount * SubagentLampSize)
+        + ((SubagentLampCount - 1) * SubagentLampGap)
+        + 4;
+    var count = hud.ActiveSubagents.ToString();
+    graphics.DrawString(count, font, shadowBrush, numberX + 1, y + 1);
+    graphics.DrawString(count, font, textBrush, numberX, y);
+}
+
 Bitmap UpscaleNearest(Bitmap input, int scale)
 {
     var output = new Bitmap(input.Width * scale, input.Height * scale, PixelFormat.Format32bppArgb);
@@ -365,7 +526,62 @@ Bitmap UpscaleNearest(Bitmap input, int scale)
     return output;
 }
 
+internal sealed class SubagentIndicatorState
+{
+    private readonly int[] _ignitionFrames;
+    private readonly int _ignitionFrameCount;
+    private int _activeSubagents;
+
+    public SubagentIndicatorState(int lampCount, int ignitionFrameCount)
+    {
+        _ignitionFrames = new int[lampCount];
+        _ignitionFrameCount = ignitionFrameCount;
+    }
+
+    public IReadOnlyList<int> NextFrame(int activeSubagents)
+    {
+        activeSubagents = Math.Max(0, activeSubagents);
+        var previousVisible = Math.Min(_activeSubagents, _ignitionFrames.Length);
+        var nextVisible = Math.Min(activeSubagents, _ignitionFrames.Length);
+
+        for (var index = previousVisible; index < nextVisible; index++)
+        {
+            _ignitionFrames[index] = _ignitionFrameCount;
+        }
+
+        for (var index = nextVisible; index < _ignitionFrames.Length; index++)
+        {
+            _ignitionFrames[index] = 0;
+        }
+
+        _activeSubagents = activeSubagents;
+        var currentFrame = (int[])_ignitionFrames.Clone();
+        for (var index = 0; index < _ignitionFrames.Length; index++)
+        {
+            if (_ignitionFrames[index] > 0)
+            {
+                _ignitionFrames[index]--;
+            }
+        }
+
+        return currentFrame;
+    }
+}
+
 internal sealed record FramePlan(string SequenceKey, int SequenceFrameIndex, HudState Hud);
-internal sealed record HudState(string RawState, int ThinkCount, int ToolCount, int ErrorCount, string TimeText, bool ErrorActive);
-internal sealed record TelemetrySnapshot(int ThinkCount, int ToolCount, int ErrorCount, string TimeText);
+internal sealed record HudState(
+    string RawState,
+    int ThinkCount,
+    int ToolCount,
+    int ErrorCount,
+    string TimeText,
+    int ActiveSubagents,
+    IReadOnlyList<int> SubagentIgnitionFrames,
+    bool ErrorActive);
+internal sealed record TelemetrySnapshot(
+    int ThinkCount,
+    int ToolCount,
+    int ErrorCount,
+    string TimeText,
+    int ActiveSubagents);
 internal sealed record Manifest(int Fps, int FrameCount, int Width, int Height, IReadOnlyList<string> Frames);

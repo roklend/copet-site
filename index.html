@@ -3,78 +3,102 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CoPet</title>
-  <meta name="description" content="CoPet v0.3.0 — a tiny desktop satellite for Codex sessions">
-  <link rel="stylesheet" href="style.css?v=0.3.0">
+  <title>CoPet — a tiny desktop companion for Codex</title>
+  <meta
+    name="description"
+    content="CoPet v0.4.2 keeps Codex session state, tool activity, errors, and active subagents visible on your Windows desktop."
+  >
+  <meta name="theme-color" content="#05070d">
+  <link rel="icon" href="assets/ui/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/ui/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="assets/ui/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css?v=0.4.2">
 </head>
 <body>
-  <main class="stage">
-    <section class="hero-copy" aria-label="CoPet introduction">
-      <div class="brand-row">
-        <h1 class="brand-title">CoPet</h1>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="wordmark" href="#main-content" aria-label="CoPet home">
+        <img src="assets/ui/copet-icon.svg" alt="" width="42" height="42">
+        <strong>CoPet</strong>
+      </a>
+
+      <div class="release-chip" aria-label="Current CoPet version">
+        <i aria-hidden="true"></i>
+        <span>v0.4.2 · Windows</span>
+      </div>
+
+      <a class="topbar-link" href="https://github.com/roklend/CoPet">GitHub</a>
+    </header>
+
+    <main class="hero" id="main-content">
+      <section class="hero-copy" aria-labelledby="hero-title">
+        <p class="eyebrow">Codex status at a glance</p>
+        <h1 id="hero-title">A tiny desktop companion for Codex.</h1>
+        <p class="hero-lede">
+          CoPet stays on top and shows when Codex is thinking, using tools,
+          finished, or running subagents — without another dashboard.
+        </p>
+
+        <div class="hero-actions">
+          <a class="button button-primary" href="https://github.com/roklend/copet-site/releases">
+            Download latest
+          </a>
+          <a class="button button-secondary" href="https://github.com/roklend/CoPet">
+            View source
+          </a>
+        </div>
+
+        <ul class="feature-list" aria-label="CoPet highlights">
+          <li>Accurate turn completion</li>
+          <li>Quiet thinking stays active</li>
+          <li>VS Code, Codex App, and CLI</li>
+          <li>Local-first, always on top</li>
+        </ul>
+
+        <div class="setup-note">
+          <span class="setup-label">First run</span>
+          <p>Apply setup, restart Codex, then review and trust the four CoPet hooks.</p>
+        </div>
+
+        <p class="meta-line">
+          <span>by roklend</span>
+          <span aria-hidden="true">·</span>
+          <a href="https://t.me/yuriispace">Telegram</a>
+          <span aria-hidden="true">·</span>
+          <a href="https://github.com/roklend">GitHub</a>
+        </p>
+      </section>
+
+      <figure class="product-preview" id="demo-viewport">
+        <div class="preview-glow" aria-hidden="true"></div>
         <img
-          class="brand-icon"
-          src="assets/ui/satellite-emoji.svg"
-          alt=""
-          width="72"
-          height="72"
+          id="frame-player"
+          class="player-frame"
+          src="render/output/base/frame_0048.png?v=0.4.2"
+          alt="The actual CoPet window showing a live Codex session"
+          width="512"
+          height="568"
+          decoding="async"
+          fetchpriority="high"
         >
-      </div>
+        <figcaption>
+          <span><i aria-hidden="true"></i> Live preview</span>
+          <span>Actual CoPet window</span>
+        </figcaption>
+      </figure>
+    </main>
 
-      <p class="hero-tagline">A tiny desktop satellite for your Codex sessions.</p>
+    <footer class="status-strip" aria-label="States shown by CoPet">
+      <span>THINKING</span>
+      <span>TOOL</span>
+      <span>DONE</span>
+      <span>ERROR</span>
+      <span>SUBAGENTS</span>
+    </footer>
+  </div>
 
-      <div class="hero-actions">
-        <a class="cta cta-primary" href="https://github.com/roklend/copet-site/releases/download/v0.3.0/CoPet-v0.3.0-win-x64.zip" aria-label="Download CoPet v0.3.0 for Windows">
-          <span>Download</span>
-          <span class="cta-note">(v0.3.0 &middot; Windows)</span>
-        </a>
-        <a class="cta cta-secondary" href="https://github.com/roklend/copet-site" aria-label="View the public CoPet site repository on GitHub">
-          <svg class="cta-icon" viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38
-              0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
-              -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07
-              -1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82
-              .64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12
-              .51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48
-              0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
-            />
-          </svg>
-          <span>GitHub</span>
-        </a>
-      </div>
-
-      <ul class="feature-list" aria-label="CoPet features">
-        <li>reacts to thinking, tools, done, error</li>
-        <li>shows a SUB indicator while sub-agents are active</li>
-        <li>trust all four CoPet hooks manually via <code>/hooks</code></li>
-        <li>lives on your desktop</li>
-        <li>local-first</li>
-        <li>made for Codex in VS Code</li>
-      </ul>
-
-      <p class="meta-line">
-        <span>by roklend</span>
-        <span aria-hidden="true">&middot;</span>
-        <a href="https://t.me/yuriispace" aria-label="Open Telegram channel">Telegram</a>
-        <span aria-hidden="true">&middot;</span>
-        <a href="https://github.com/roklend" aria-label="Open GitHub profile">GitHub</a>
-      </p>
-    </section>
-
-    <section class="player-shell" aria-label="CoPet render preview">
-      <img
-        id="frame-player"
-        class="player-frame"
-        src="render/output/x2/frame_0001.png?v=0.3.0"
-        alt="CoPet render preview"
-        width="512"
-        height="568"
-      >
-    </section>
-  </main>
-
-  <script src="copet.js?v=0.3.0"></script>
+  <script src="copet.js?v=0.4.2"></script>
 </body>
 </html>
