@@ -2,7 +2,7 @@
   const FPS = 6;
   const FRAME_DURATION = 1000 / FPS;
   const FRAME_PREFIX = "render/output/base/frame_";
-  const FRAME_SUFFIX = ".png?v=0.4.2";
+  const FRAME_SUFFIX = ".png?v=0.4.3";
   const PRELOAD_BATCH_SIZE = 8;
   const STATIC_FRAME = 48;
 
