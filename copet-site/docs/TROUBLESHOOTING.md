@@ -141,6 +141,19 @@ does not mean the last answer succeeded. It is not expected after every answer
 or immediately when switching conversations. Missing observations are not proof
 of a broken receiver; check configuration, trust and an actual session boundary.
 
+## Ticker or setup text uses a different font
+
+Versions through `0.4.7` loaded the embedded pixel font for GDI+ only, while
+the ticker and standard setup controls use GDI. Without the font installed in
+Windows, those elements could silently render with a system substitute.
+
+Use `0.4.8` or later: the font is bundled and registered privately for both
+renderers, without installing a font or requiring administrator rights. Merely
+having the font file beside the old executable does not fix its loader.
+Restart CoPet after replacing the executable. If the issue persists, record the
+executable version, Windows display scale and a screenshot; do not assume that
+installing .NET or changing Codex configuration will change the font.
+
 ## Understanding the activity ticker
 
 The strip now shows a bounded, deterministic activity journal as well as approval
