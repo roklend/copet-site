@@ -1,169 +1,98 @@
 (() => {
-  const FPS = 6;
-  const FRAME_DURATION = 1000 / FPS;
-  const FRAME_PREFIX = "render/output/base/frame_";
-  const FRAME_SUFFIX = ".png?v=0.4.3";
-  const PRELOAD_BATCH_SIZE = 8;
-  const STATIC_FRAME = 48;
-
-  const player = document.getElementById("frame-player");
-  const viewport = document.getElementById("demo-viewport");
-
-  if (!player || !viewport) {
-    return;
-  }
-
-  const range = (start, end) => {
-    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
-  };
-
-  const story = [
-    ...range(33, 40),
-    ...range(45, 60),
-    ...range(89, 112),
-    ...range(129, 144),
-  ];
-
-  const framePath = (frame) => {
-    return `${FRAME_PREFIX}${String(frame).padStart(4, "0")}${FRAME_SUFFIX}`;
-  };
-
-  const loadedFrames = new Set();
-  const preloadFrame = (frame) => {
-    if (loadedFrames.has(frame)) {
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      const image = new Image();
-      const finish = () => {
-        loadedFrames.add(frame);
-        resolve();
-      };
-      image.onload = finish;
-      image.onerror = finish;
-      image.src = framePath(frame);
-    });
-  };
-
-  const preloadBatch = (startIndex) => {
-    const batch = story.slice(startIndex, startIndex + PRELOAD_BATCH_SIZE);
-    return Promise.all(batch.map(preloadFrame));
-  };
-
-  const schedulePreloads = (startIndex) => {
-    if (startIndex >= story.length) {
-      return;
-    }
-
-    const schedule = window.requestIdleCallback
-      ? (callback) => window.requestIdleCallback(callback, { timeout: 1200 })
-      : (callback) => window.setTimeout(callback, 180);
-
-    schedule(() => {
-      preloadBatch(startIndex).finally(() => {
-        schedulePreloads(startIndex + PRELOAD_BATCH_SIZE);
-      });
-    });
-  };
-
-  const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let storyIndex = 0;
-  let animationFrame = null;
+  const player = document.getElementById('frame-player');
+  const viewport = document.getElementById('demo-viewport');
+  const toggle = document.getElementById('play-toggle');
+  const state = document.getElementById('demo-state');
+  const progress = document.getElementById('demo-progress');
+  const note = document.getElementById('demo-note');
+  if (!player || !viewport || !toggle) return;
+  const root = 'assets/demo-v049/';
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let playing = !motion.matches;
+  let ready = false;
+  let visible = true;
+  let index = 0;
   let lastTick = 0;
-  let isVisible = true;
-  let initialBatchReady = false;
-
-  const renderFrame = (frame) => {
-    const src = framePath(frame);
-    if (player.dataset.frameSrc !== src) {
-      player.dataset.frameSrc = src;
-      player.src = src;
+  let raf = null;
+  let manifest;
+  let images = new Map();
+  let failed = false;
+  const label = (frame) => frame < 12 || frame >= 124 ? 'Ready for the next turn'
+    : frame < 20 ? 'Unfolding' : frame < 28 ? 'Thinking'
+    : frame < 44 ? 'Three subagents at work' : frame < 76 ? 'Using tools'
+    : frame < 92 ? 'Thinking' : frame < 106 ? 'Turn complete'
+    : frame < 114 ? 'Folding back up' : 'Done. All folded up.';
+  function render() {
+    const frame = manifest.playback[index];
+    player.src = images.get(frame).src;
+    player.dataset.frame = String(frame);
+    state.textContent = label(frame);
+    progress.style.width = `${(index + 1) / manifest.playback.length * 100}%`;
+  }
+  function sync() {
+    if (raf !== null) cancelAnimationFrame(raf);
+    raf = null;
+    toggle.textContent = failed ? 'Retry' : !ready ? 'Loading…' : playing ? 'Pause' : 'Play';
+    toggle.setAttribute('aria-label', failed ? 'Retry loading animation' : playing ? 'Pause animation' : 'Play animation');
+    toggle.disabled = !ready && !failed;
+    if (ready && playing && visible && document.visibilityState === 'visible') {
+      lastTick = performance.now();
+      raf = requestAnimationFrame(tick);
     }
-  };
-
-  const shouldAnimate = () => {
-    return initialBatchReady
-      && !motionQuery.matches
-      && isVisible
-      && document.visibilityState === "visible";
-  };
-
-  const stopPlayback = () => {
-    if (animationFrame !== null) {
-      window.cancelAnimationFrame(animationFrame);
-      animationFrame = null;
-    }
-  };
-
-  const tick = (now) => {
-    if (!shouldAnimate()) {
-      stopPlayback();
-      return;
-    }
-
-    if (!lastTick) {
+  }
+  function tick(now) {
+    if (now - lastTick >= 1000 / manifest.fps) {
+      // Never catch up by skipping transition frames after a slow render.
+      index = (index + 1) % manifest.playback.length;
       lastTick = now;
+      render();
     }
-
-    if (now - lastTick >= FRAME_DURATION) {
-      const elapsedFrames = Math.floor((now - lastTick) / FRAME_DURATION);
-      storyIndex = (storyIndex + elapsedFrames) % story.length;
-      lastTick += elapsedFrames * FRAME_DURATION;
-      renderFrame(story[storyIndex]);
-      preloadFrame(story[(storyIndex + 1) % story.length]);
-    }
-
-    animationFrame = window.requestAnimationFrame(tick);
-  };
-
-  const startPlayback = () => {
-    if (animationFrame !== null || !shouldAnimate()) {
-      return;
-    }
-
-    lastTick = performance.now();
-    animationFrame = window.requestAnimationFrame(tick);
-  };
-
-  if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver((entries) => {
-      isVisible = entries.some((entry) => entry.isIntersecting);
-      if (isVisible) {
-        startPlayback();
-      } else {
-        stopPlayback();
-      }
-    }, { threshold: 0.1 });
-    observer.observe(viewport);
+    raf = requestAnimationFrame(tick);
   }
-
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      startPlayback();
-    } else {
-      stopPlayback();
+  async function load() {
+    failed = false;
+    ready = false;
+    sync();
+    try {
+      const response = await fetch(`${root}manifest.json`);
+      if (!response.ok) throw new Error('Manifest unavailable');
+      manifest = await response.json();
+      const frames = [...new Set(manifest.playback)];
+      const loaded = new Map();
+      let cursor = 0;
+      await Promise.all(Array.from({ length: 6 }, async () => {
+        while (cursor < frames.length) {
+          const frame = frames[cursor++];
+          const image = new Image();
+          image.src = root + manifest.frames[frame].file;
+          await image.decode();
+          loaded.set(frame, image);
+        }
+      }));
+      images = loaded;
+      index = 0;
+      ready = true;
+      render();
+      note.textContent = 'Actual CoPet 0.4.9 rendering · Synthetic session data';
+    } catch {
+      failed = true;
+      state.textContent = 'Animation unavailable';
+      note.textContent = 'The download still works. Retry to load the demo.';
     }
+    sync();
+  }
+  toggle.addEventListener('click', () => {
+    if (failed) { load(); return; }
+    playing = !playing;
+    sync();
   });
-
-  const handleMotionPreference = () => {
-    if (motionQuery.matches) {
-      stopPlayback();
-      renderFrame(STATIC_FRAME);
-    } else {
-      startPlayback();
-    }
-  };
-
-  motionQuery.addEventListener?.("change", handleMotionPreference);
-  renderFrame(STATIC_FRAME);
-
-  if (!motionQuery.matches) {
-    preloadBatch(0).finally(() => {
-      initialBatchReady = true;
-      renderFrame(story[0]);
-      startPlayback();
-      schedulePreloads(PRELOAD_BATCH_SIZE);
-    });
+  motion.addEventListener('change', () => { playing = !motion.matches; sync(); });
+  document.addEventListener('visibilitychange', sync);
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entries => {
+      visible = entries.some(entry => entry.isIntersecting);
+      sync();
+    }, { threshold: 0.1 }).observe(viewport);
   }
+  load();
 })();
