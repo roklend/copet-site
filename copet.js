@@ -1,9 +1,13 @@
 (() => {
+  const setup = document.getElementById('setup');
+  document.getElementById('setup-link')?.addEventListener('click', () => {
+    setup.open = true;
+  });
+  if (setup && window.location?.hash === '#setup') setup.open = true;
   const player = document.getElementById('frame-player');
   const viewport = document.getElementById('demo-viewport');
   const toggle = document.getElementById('play-toggle');
   const state = document.getElementById('demo-state');
-  const progress = document.getElementById('demo-progress');
   const note = document.getElementById('demo-note');
   if (!player || !viewport || !toggle) return;
   const root = 'assets/demo-v049/';
@@ -27,7 +31,6 @@
     player.src = images.get(frame).src;
     player.dataset.frame = String(frame);
     state.textContent = label(frame);
-    progress.style.width = `${(index + 1) / manifest.playback.length * 100}%`;
   }
   function sync() {
     if (raf !== null) cancelAnimationFrame(raf);
